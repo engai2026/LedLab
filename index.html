@@ -1,4 +1,8 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>LED Lab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -198,6 +202,8 @@ table.mx{border-collapse:collapse;font:500 13.5px var(--mono);font-variant-numer
 @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 
+</head>
+<body>
 <div class="wrap">
 <header>
   <div>
@@ -2331,7 +2337,7 @@ function showTab(t) {
   if (!TABS.includes(t)) t = 'lab';
   tab = t;
   TABS.forEach(x => { $('p-' + x).hidden = x !== t; $('tab-' + x).setAttribute('aria-selected', x === t); });
-  save('tab', t);
+  save('room', t);
   if (!INIT[t] && window['init_' + t]) { INIT[t] = true; window['init_' + t](); }
   else if (RENDER[t]) RENDER[t]();
 }
@@ -2769,7 +2775,7 @@ function nfRenderStep() {
 }
 
 // ---------- TABLEAUX ----------
-const TAB = load('tab') || { lang: 'prop', goal: 'cons', G: 'p ↔ q\nq → r', C: 'p → r', X: '(p → q) ∧ (q → r) → (p → r)', Y: '', S: 'p ↔ q\nq → r\n¬(p → r)' };
+const TAB = (o => o && typeof o === 'object' && o.goal ? o : null)(load('tableau')) || { lang: 'prop', goal: 'cons', G: 'p ↔ q\nq → r', C: 'p → r', X: '(p → q) ∧ (q → r) → (p → r)', Y: '', S: 'p ↔ q\nq → r\n¬(p → r)' };
 TAB.i = 0;
 const TAB_PRESETS = {
   prop: [
@@ -2799,7 +2805,7 @@ function init_tab() {
   kbd('tabkbd', KBD_PRED, () => lastFocus && $('p-tab').contains(lastFocus) ? lastFocus : $('tabins').querySelector('textarea,input'));
   render_tab();
 }
-function loadTab(o) { Object.assign(TAB, o); if (o.G !== undefined && o.goal === 'sat') TAB.S = o.G; save('tab', TAB); showTab('tab'); if (INIT.tab) render_tab(); }
+function loadTab(o) { Object.assign(TAB, o); if (o.G !== undefined && o.goal === 'sat') TAB.S = o.G; save('tableau', TAB); showTab('tab'); if (INIT.tab) render_tab(); }
 // keep the formula the user is working with when the question changes
 function tabCarry(from, to) {
   if (from === to) return;
@@ -2812,8 +2818,8 @@ function tabCarry(from, to) {
   if (to === 'valid' || to === 'equiv') TAB.X = one;
 }
 function render_tab() {
-  seg('tablang', [['prop', 'Propositional', 'Proposicional'], ['pred', 'First-order', 'Predicados']], TAB.lang, v => { TAB.lang = v; save('tab', TAB); render_tab(); });
-  seg('tabgoal', [['sat', 'Γ satisfiable?', '¿Γ satisfacible?'], ['valid', 'X valid?', '¿X válida?'], ['cons', 'Γ ⊨ C?', '¿Γ ⊨ C?'], ['equiv', 'X ≡ Y?', '¿X ≡ Y?']], TAB.goal, v => { tabCarry(TAB.goal, v); TAB.goal = v; save('tab', TAB); render_tab(); });
+  seg('tablang', [['prop', 'Propositional', 'Proposicional'], ['pred', 'First-order', 'Predicados']], TAB.lang, v => { TAB.lang = v; save('tableau', TAB); render_tab(); });
+  seg('tabgoal', [['sat', 'Γ satisfiable?', '¿Γ satisfacible?'], ['valid', 'X valid?', '¿X válida?'], ['cons', 'Γ ⊨ C?', '¿Γ ⊨ C?'], ['equiv', 'X ≡ Y?', '¿X ≡ Y?']], TAB.goal, v => { tabCarry(TAB.goal, v); TAB.goal = v; save('tableau', TAB); render_tab(); });
   const g = TAB.goal;
   let h = '';
   if (g === 'sat') h = `<label class="hint" for="tbS">${T('Set Γ, one formula per line', 'Conjunto Γ, una fórmula por línea')}</label><textarea id="tbS" rows="4" spellcheck="false">${esc(TAB.S)}</textarea>`;
@@ -2821,8 +2827,8 @@ function render_tab() {
   if (g === 'cons') h = `<label class="hint" for="tbG">${T('Premises Γ, one per line', 'Premisas Γ, una por línea')}</label><textarea id="tbG" rows="3" spellcheck="false">${esc(TAB.G)}</textarea><label class="hint" for="tbC">C</label><input type="text" id="tbC" value="${esc(TAB.C)}" autocomplete="off" spellcheck="false">`;
   if (g === 'equiv') h = `<label class="hint" for="tbX">X</label><input type="text" id="tbX" value="${esc(TAB.X)}" autocomplete="off" spellcheck="false"><label class="hint" for="tbY">Y</label><input type="text" id="tbY" value="${esc(TAB.Y)}" autocomplete="off" spellcheck="false">`;
   $('tabins').innerHTML = h;
-  [['tbS', 'S'], ['tbX', 'X'], ['tbG', 'G'], ['tbC', 'C'], ['tbY', 'Y']].forEach(([id, k]) => { const el = $(id); if (el) el.addEventListener('input', debounce(() => { TAB[k] = el.value; save('tab', TAB); tabBuild(); }, 250)); });
-  presets('tabpresets', TAB_PRESETS[TAB.lang], p => { Object.assign(TAB, p); delete TAB.label; save('tab', TAB); render_tab(); });
+  [['tbS', 'S'], ['tbX', 'X'], ['tbG', 'G'], ['tbC', 'C'], ['tbY', 'Y']].forEach(([id, k]) => { const el = $(id); if (el) el.addEventListener('input', debounce(() => { TAB[k] = el.value; save('tableau', TAB); tabBuild(); }, 250)); });
+  presets('tabpresets', TAB_PRESETS[TAB.lang], p => { Object.assign(TAB, p); delete TAB.label; save('tableau', TAB); render_tab(); });
   $('tabrules').innerHTML = tabRulesHTML();
   $('tablegend').innerHTML = T('Each node: its number, the formula and, in brackets, the node it comes from. × marks a closed branch (a literal and its negation), ○ an open branch that is fully expanded. Strategy: linear rules (α) first, then existentials (δ), branching (β), and universals (γ) last.', 'Cada nodo: su número, la fórmula y, entre corchetes, el nodo del que procede. × marca una rama cerrada (un literal y su negación), ○ una rama abierta completamente expandida. Estrategia: primero reglas lineales (α), luego existenciales (δ), bifurcaciones (β) y universales (γ) al final.');
   tabBuild();
@@ -4721,9 +4727,10 @@ function foOpen(s) { FO.src = s; save('fosrc', s); if (INIT.fo) { $('foin').valu
 (function boot() {
   applyStatic();
   const h = (location.hash || '').replace('#', '');
-  showTab(TABS.includes(h) ? h : (load('tab') || 'lab'));
+  showTab(TABS.includes(h) ? h : (TABS.includes(load('room')) ? load('room') : 'lab'));
 })();
 
 </script>
 
-</body></html>
+</body>
+</html>
